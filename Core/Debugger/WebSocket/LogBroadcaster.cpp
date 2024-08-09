@@ -34,27 +34,19 @@ public:
 
 	std::vector<LogMessage> GetMessages() {
 		std::lock_guard<std::mutex> guard(lock_);
-		int splitPoint;
-		int readCount;
-		if (read_ + BUFFER_SIZE < count_) {
+
+		int start = read_;
+		int stop = count_;
+		if (stop - start > BUFFER_SIZE) {
 			// We'll start with our oldest then.
-			splitPoint = nextMessage_;
-			readCount = Count();
-		} else {
-			splitPoint = read_;
-			readCount = count_ - read_;
+			start = stop - BUFFER_SIZE;
 		}
 
 		read_ = count_;
 
 		std::vector<LogMessage> results;
-		int splitEnd = std::min(splitPoint + readCount, (int)BUFFER_SIZE);
-		for (int i = splitPoint; i < splitEnd; ++i) {
-			results.push_back(messages_[i]);
-			readCount--;
-		}
-		for (int i = 0; i < readCount; ++i) {
-			results.push_back(messages_[i]);
+		for (int i = start; i < stop; i++) {
+		    results.push_back(messages_[i % BUFFER_SIZE]);
 		}
 
 		return results;
